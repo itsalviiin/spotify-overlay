@@ -3,7 +3,7 @@ const urlParams = new URLSearchParams(queryString);
 
 const code = urlParams.get("code") || "";
 
-const baseURL = "https://itsalviiin.github.io/spotify-widget";
+const baseURL = "https://itsalviiin.github.io/spotify-overlay";
 const redirect_uri = `${baseURL}/configure`;
 let refresh_token = "";
 let access_token = "";
