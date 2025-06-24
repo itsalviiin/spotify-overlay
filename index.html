@@ -1,0 +1,47 @@
+<!doctype html>
+
+<head>
+  <title>Spotify Widget</title>
+  <meta charset="UTF-8">
+  <link rel="shortcut icon" href="#" />
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"
+    integrity="sha384-2huaZvOR9iDzHqslqwpR87isEmrfxqyWOF7hr7BY6KG0+hVKLoEXMPUJw3ynWuhO"
+    crossorigin="anonymous"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@300..700&display=swap" rel="stylesheet">
+  <script type="module" crossorigin src="/assets/index-DTHxCEsW.js"></script>
+  <link rel="stylesheet" crossorigin href="/assets/index-D-2DDoBq.css">
+</head>
+
+<body>
+  <div id="mainContainer">
+    <div id="songInfoBox">
+      <div id="albumArtBox">
+        <img id="albumArt" src="/assets/album-art-placeholder-UjBhNpmb.png"></img>
+      </div>
+      <div id="songInfo">
+        <div id="topInfo">
+          <div id="songLabel">???</div>
+          <span id="dotSeparator">•</span>
+          <div id="artistLabel">???</div>
+        </div>
+        <div id="bottomInfo">
+          <div id="times">
+            <div id="progressTime">0:00</div>
+            <div id="progressBg">
+              <div id="progressBar"></div>
+            </div>
+            <div id="endTime">0:00</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div id="backgroundArt">
+      <canvas id="gradient-canvas"></canvas>
+      <!-- <img id="backgroundImage" src="./src/images/album-art-placeholder.png"></img> -->
+    </div>
+  </div>
+</body>
+
+</html>
