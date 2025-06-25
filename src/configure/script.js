@@ -9,6 +9,9 @@ let refresh_token = "";
 let access_token = "";
 let widgetURL = "";
 
+document.getElementById('authorizeButton').addEventListener('click', requestAuthorization);
+document.getElementById('copyURLButton').addEventListener('click', copyToURL);
+
 function requestAuthorization() {
     const client_id = document.getElementById("client_id_box").value;
     const client_secret = document.getElementById("client_secret_box").value;
