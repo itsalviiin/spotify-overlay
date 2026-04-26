@@ -2,6 +2,8 @@ import './style.css'
 import Gradient from './minigl.js';
 import { Vibrant } from "node-vibrant/browser";
 
+console.log("Spotify Overlay [v1.01]")
+
 const queryString = window.location.search;
 const urlParams = new URLSearchParams(queryString);
 
@@ -18,7 +20,7 @@ const textScroll = urlParams.get("text_scroll") || "ease-in-out";
 let currentState = false;
 let currentSongUri = "";
 
-const regex = /(?:featuring|with|feat\.?)\s+(.*)/i;
+const regex = /(?:(?:featuring|with|feat\.?|by)\s+|-\s+|\[\s+)(.*?)(?:\)|\]|\s+remix\]|\s+remix|$)/i;
 var gradient = new Gradient();
 
 /** Spotify API */
@@ -82,7 +84,6 @@ function updatePlayer(data) {
       setTimeout(() => {
         gradient.play()
         setVisibility(true);
-        topInfo.classList.add("animate");
 
         if (visibilityDuration > 0) {
           setTimeout(() => {
@@ -163,7 +164,7 @@ function updatePlayer(data) {
         const gradientSettings = {
           "--gradient-color-1": `${palette.DarkMuted.hex}`,
           "--gradient-color-2": `${brighten(palette.Vibrant.hex, -10)}`,
-          "--gradient-color-3": `${brighten(palette.LightVibrant.hex, -10)}`,
+          "--gradient-color-3": `${brighten(palette.LightVibrant.hex, -15)}`,
           "--gradient-color-4": `${brighten(palette.DarkMuted.hex, -5)}`,
           "--gradient-speed": `0.000009`,
         };
