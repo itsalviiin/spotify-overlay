@@ -33,8 +33,10 @@ body {
 
 #albumArt {
   width: var(--album-art-size);
+  height: var(--album-art-size);
   border-radius: var(--corner-radius);
   display: block;
+  object-fit: cover;
 }
 
 #songInfoBox {
