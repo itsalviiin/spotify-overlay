@@ -2,7 +2,7 @@ import './style.css'
 import Gradient from './minigl.js';
 import { Vibrant } from "node-vibrant/browser";
 
-console.log("Spotify Overlay [v1.01]")
+console.log("Spotify Overlay [v1.1]")
 
 const queryString = window.location.search;
 const urlParams = new URLSearchParams(queryString);
@@ -16,9 +16,16 @@ const visibilityDuration = urlParams.get("duration") || 0;
 const hideAlbumArt = urlParams.has("hide_album_art");
 const hideTimes = urlParams.has("hide_times");
 const textScroll = urlParams.get("text_scroll") || "ease-in-out";
+const enableCanvasArt = urlParams.get("enable_canvas") || "false";
 
-let currentState = false;
-let currentSongUri = "";
+var currentState = false;
+var currentSongUri = "";
+var canvasVideoUrl = ""
+var swapState = true;
+var swapTimeoutId = null;
+
+const albumArtDiv = document.getElementById('albumArt')
+const videoCanvasDiv = document.getElementById('videoCanvas');
 
 const regex = /(?:(?:featuring|with|feat\.?|by)\s+|-\s+|\[\s+)(.*?)(?:\)|\]|\s+remix\]|\s+remix|$)/i;
 var gradient = new Gradient();
@@ -65,7 +72,7 @@ async function getCurrentlyPlaying() {
   }
 }
 
-function updatePlayer(data) {
+async function updatePlayer(data) {
   var isPlaying = data.is_playing;
   var songUri = data.item.uri;
   var duration = `${data.item.duration_ms / 1000}`;
@@ -96,7 +103,7 @@ function updatePlayer(data) {
 
   var topInfo = document.getElementById("topInfo");
 
-  /** If song is different */
+  /** On song change */
   if (songUri != currentSongUri) {
     if (isPlaying) {
       setTimeout(() => {
@@ -142,8 +149,7 @@ function updatePlayer(data) {
       }
 
       var albumArt = data.item.album.images.length > 0 ? `${data.item.album.images[0].url}` : `./src/images/album-art-placeholder.png`;
-      updateAlbumArt(document.getElementById("albumArt"), albumArt);
-      // updateAlbumArt(document.getElementById("backgroundImage"), albumArt);
+      updateAlbumArt(albumArt);
 
       /** Set colors from album art */
       Vibrant.from(albumArt).getPalette().then(function (palette) {
@@ -164,7 +170,7 @@ function updatePlayer(data) {
         const gradientSettings = {
           "--gradient-color-1": `${palette.DarkMuted.hex}`,
           "--gradient-color-2": `${brighten(palette.Vibrant.hex, -10)}`,
-          "--gradient-color-3": `${brighten(palette.LightVibrant.hex, -15)}`,
+          "--gradient-color-3": `${brighten(palette.LightVibrant.hex, -20)}`,
           "--gradient-color-4": `${brighten(palette.DarkMuted.hex, -5)}`,
           "--gradient-speed": `0.000009`,
         };
@@ -176,6 +182,19 @@ function updatePlayer(data) {
 
       animateSongLabel(name)
       animateArtistLabel(artist)
+
+      if (enableCanvasArt === "true" || enableCanvasArt === "always" || enableCanvasArt === "swap") {
+        canvasVideoUrl = await getCanvasUrl(currentSongUri.split(`:`)[2])
+        updateVideoCanvas(canvasVideoUrl)
+        if (enableCanvasArt === "swap") {
+          if (swapTimeoutId) {
+            clearTimeout(swapTimeoutId);
+            swapTimeoutId = null;
+          }
+          swapState = true
+          swapAlbumArt(songUri)
+        }
+      }
     }
   }
 
@@ -337,13 +356,78 @@ function brighten(color, amount) {
   return HSLToHex(hsl.h, hsl.s, hsl.l);
 }
 
-function updateAlbumArt(div, imgsrc) {
-  if (div.src != imgsrc) {
-    div.setAttribute("class", "text-fade");
+async function getCanvasUrl(trackUri) {
+  const canvasDataResponse = await fetch(`https://canvas.nowplaying.site/api/${trackUri}`)
+
+  if (canvasDataResponse.ok) {
+    var canvasData = await canvasDataResponse.json();
+    if (canvasData.canvasesList.length == 0) {
+      return ""
+    } else {
+      if (canvasData.canvasesList[0].canvasUrl.endsWith(".mp4")) {
+        return canvasData.canvasesList[0].canvasUrl
+      } else {
+        return ""
+      }
+    }
+  } else {
+    return ""
+  }
+}
+
+function updateVideoCanvas(vidsrc) {
+  if (vidsrc !== "") {
+    videoCanvasDiv.setAttribute("class", "text-fade");
+    videoCanvasDiv.playbackRate = 0.9
     setTimeout(() => {
-      div.src = imgsrc;
-      div.setAttribute("class", "text-show");
+      videoCanvasDiv.src = vidsrc
+      videoCanvasDiv.play();
+      videoCanvasDiv.setAttribute("class", "text-show");
+      albumArtDiv.style.display = 'none';
     }, 500);
+  } else {
+    videoCanvasDiv.setAttribute("class", "text-fade");
+  }
+}
+
+function updateAlbumArt(imgsrc) {
+  if (albumArtDiv.style.display === 'none') {
+    albumArtDiv.style.display = 'block'
+  }
+  albumArtDiv.setAttribute("class", "text-fade");
+  setTimeout(() => {
+    albumArtDiv.src = imgsrc;
+    videoCanvasDiv.src = ""
+    albumArtDiv.setAttribute("class", "text-show");
+  }, 500);
+}
+
+function swapAlbumArt(songUri) {
+  if (canvasVideoUrl !== "") {
+    let delay
+    if (swapState) {
+      /** When displaying canvas */
+      albumArtDiv.setAttribute("class", "text-fade");
+      videoCanvasDiv.currentTime = 0
+      videoCanvasDiv.setAttribute("class", "text-show");
+      albumArtDiv.style.display = 'none'
+      delay = 20000;
+    } else {
+      /** When displaying album art */
+      videoCanvasDiv.setAttribute("class", "text-fade");
+      albumArtDiv.setAttribute("class", "text-show");
+      albumArtDiv.style.display = 'block'
+      delay = 10000;
+    }
+    swapState = !swapState;
+
+    swapTimeoutId = setTimeout(() => swapAlbumArt(songUri), delay);
+  } else {
+    /** When song changed or no canvas url */
+    if (albumArtDiv.style.display === 'none') {
+      albumArtDiv.style.display = 'block'
+    }
+    swapState = true
   }
 }
 
