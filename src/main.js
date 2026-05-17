@@ -2,7 +2,7 @@ import './style.css'
 import Gradient from './minigl.js';
 import { Vibrant } from "node-vibrant/browser";
 
-console.log("Spotify Overlay [v1.1]")
+console.log("Spotify Overlay [v1.1.1]")
 
 const queryString = window.location.search;
 const urlParams = new URLSearchParams(queryString);
@@ -24,11 +24,14 @@ var canvasVideoUrl = ""
 var swapState = true;
 var swapTimeoutId = null;
 
+const regex = /(?:(?:featuring|with|feat\.?|by)\s+|-\s+|\[\s+)(.*?)(?:\)|\]|\s+remix\]|\s+remix|$)/i;
+
 const albumArtDiv = document.getElementById('albumArt')
 const videoCanvasDiv = document.getElementById('videoCanvas');
-
-const regex = /(?:(?:featuring|with|feat\.?|by)\s+|-\s+|\[\s+)(.*?)(?:\)|\]|\s+remix\]|\s+remix|$)/i;
 var gradient = new Gradient();
+
+gradient.seed = Number(urlParams.get("gradient_seed")) || Math.floor(Math.random() * 10000);
+gradient.amp = Number(urlParams.get("gradient_amp")) || 300;
 
 /** Spotify API */
 async function refreshAccessToken() {
@@ -79,16 +82,18 @@ async function updatePlayer(data) {
   var progress = `${data.progress_ms / 1000}`;
 
   /** If song played or paused */
-  if (isPlaying != currentState) {
+  if (isPlaying !== currentState) {
     if (!isPlaying) {
       setVisibility(false);
       setTimeout(() => {
         topInfo.classList.remove("animate");
         topInfo.style.transform = "translateX(0)";
         gradient.pause()
+        videoCanvasDiv.pause();
       }, 500);
     } else {
       setTimeout(() => {
+        videoCanvasDiv.play();
         gradient.play()
         setVisibility(true);
 
@@ -104,8 +109,12 @@ async function updatePlayer(data) {
   var topInfo = document.getElementById("topInfo");
 
   /** On song change */
-  if (songUri != currentSongUri) {
+  if (songUri !== currentSongUri) {
     if (isPlaying) {
+      if (swapTimeoutId) {
+        clearTimeout(swapTimeoutId);
+        swapTimeoutId = null;
+      }
       setTimeout(() => {
         setVisibility(true);
 
@@ -187,12 +196,8 @@ async function updatePlayer(data) {
         canvasVideoUrl = await getCanvasUrl(currentSongUri.split(`:`)[2])
         updateVideoCanvas(canvasVideoUrl)
         if (enableCanvasArt === "swap") {
-          if (swapTimeoutId) {
-            clearTimeout(swapTimeoutId);
-            swapTimeoutId = null;
-          }
           swapState = true
-          swapAlbumArt(songUri)
+          swapAlbumArt()
         }
       }
     }
@@ -402,7 +407,7 @@ function updateAlbumArt(imgsrc) {
   }, 500);
 }
 
-function swapAlbumArt(songUri) {
+function swapAlbumArt() {
   if (canvasVideoUrl !== "") {
     let delay
     if (swapState) {
@@ -421,7 +426,7 @@ function swapAlbumArt(songUri) {
     }
     swapState = !swapState;
 
-    swapTimeoutId = setTimeout(() => swapAlbumArt(songUri), delay);
+    swapTimeoutId = setTimeout(() => swapAlbumArt(), delay);
   } else {
     /** When song changed or no canvas url */
     if (albumArtDiv.style.display === 'none') {
@@ -463,7 +468,7 @@ if (hideTimes) {
   document.getElementById("topInfo").style.marginBottom = "20px";
 }
 
-if (client_id != "" & client_secret != "") {
+if (client_id !== "" & client_secret !== "") {
   refreshAccessToken();
   setInterval(() => {
     getCurrentlyPlaying()
